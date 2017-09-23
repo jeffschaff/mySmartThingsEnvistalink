@@ -70,13 +70,13 @@ def subscribeToEvents() {
 }
 
 def uninstalled() {
-  removeChildDevices()
+  //removeChildDevices()
 }
 
 def updated() {
   if (settings.enableDiscovery) {
     //remove child devices as we will reload
-    removeChildDevices()
+    //removeChildDevices()
   }
 
   //subscribe to callback/notifications from STNP
@@ -177,8 +177,10 @@ private addChildDevices(partitions, zones) {
     def deviceId = 'honeywell|partition'+it.partition
     if (!getChildDevice(deviceId)) {
       addChildDevice("redloro-smartthings", "Honeywell Partition", deviceId, hostHub.id, ["name": "Honeywell Security", label: "Honeywell Security", completedSetup: true])
-      //log.debug "Added partition device: ${deviceId}"
+      log.debug "Added partition device: ${deviceId}"
     }
+    log.debug "Total Partitions: ${partitions}"
+    log.debug "Total Zones: ${zones}"
   }
 
   zones.each {
@@ -186,7 +188,8 @@ private addChildDevices(partitions, zones) {
     if (!getChildDevice(deviceId)) {
       it.type = it.type.capitalize()
       addChildDevice("redloro-smartthings", "Honeywell Zone "+it.type, deviceId, hostHub.id, ["name": it.name, label: it.name, completedSetup: true])
-      //log.debug "Added zone device: ${deviceId}"
+      log.debug "Added zone #: ${it.zone}"
+      log.debug "Added zone device: ${deviceId}"
     }
   }
 }
@@ -200,7 +203,7 @@ def discoverChildDevices() {
 }
 
 private updateZoneDevices(zonenum,zonestatus) {
-  //log.debug "updateZoneDevices: ${zonenum} is ${zonestatus}"
+  log.debug "updateZoneDevices: ${zonenum} is ${zonestatus}"
   def zonedevice = getChildDevice("honeywell|zone${zonenum}")
   if (zonedevice) {
     zonedevice.zone("${zonestatus}")
@@ -208,7 +211,7 @@ private updateZoneDevices(zonenum,zonestatus) {
 }
 
 private updatePartitions(partitionnum, partitionstatus, panelalpha) {
-  //log.debug "updatePartitions: ${partitionnum} is ${partitionstatus}"
+  log.debug "updatePartitions: ${partitionnum} is ${partitionstatus}"
   def partitionDevice = getChildDevice("honeywell|partition${partitionnum}")
   if (partitionDevice) {
     partitionDevice.partition("${partitionstatus}", "${panelalpha}")
@@ -272,6 +275,7 @@ private getHttpBody(body) {
     def slurper = new JsonSlurper()
     obj = slurper.parseText(new String(body.decodeBase64()))
   }
+  log.debug "HttpBody: ${obj}"
   return obj
 }
 
