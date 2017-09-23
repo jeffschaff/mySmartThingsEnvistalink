@@ -70,13 +70,13 @@ def subscribeToEvents() {
 }
 
 def uninstalled() {
-  //removeChildDevices()
+  removeChildDevices()
 }
 
 def updated() {
   if (settings.enableDiscovery) {
     //remove child devices as we will reload
-    //removeChildDevices()
+    removeChildDevices()
   }
 
   //subscribe to callback/notifications from STNP
