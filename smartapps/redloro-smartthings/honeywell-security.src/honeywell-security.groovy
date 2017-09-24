@@ -36,21 +36,21 @@ def page1() {
       input "hostHub", "hub", title: "Select Hub", multiple: false, required: true
     }
     section("SmartThings Node Proxy") {
-      input "proxyAddress", "text", title: "Proxy Address", description: "(ie. 192.168.1.10)", required: true
+      input "proxyAddress", "text", title: "Proxy Address", description: "(ie. 192.168.1.223)", required: true, defaultValue: "192.168.1.223"
       input "proxyPort", "text", title: "Proxy Port", description: "(ie. 8080)", required: true, defaultValue: "8080"
-      input "authCode", "password", title: "Auth Code", description: "", required: true, defaultValue: "secret-key"
+      input "authCode", "password", title: "Auth Code", description: "123", required: true, defaultValue: "123"
     }
     section("Honeywell Panel") {
-      input name: "pluginType", type: "enum", title: "Plugin Type", required: true, submitOnChange: true, options: ["envisalink", "ad2usb"]
-      input "securityCode", "password", title: "Security Code", description: "User code to arm/disarm the security panel", required: false
+      input name: "pluginType", type: "enum", title: "Plugin Type", required: true, submitOnChange: true, options: ["envisalink", "ad2usb"], defaultValue: "envisalink"
+      input "securityCode", "password", title: "Security Code", description: "User code to arm/disarm the security panel", required: true, defaultValue: "1128"
       input "enableDiscovery", "bool", title: "Discover Zones (WARNING: all existing zones will be removed)", required: false, defaultValue: false
     }
 
     if (pluginType == "envisalink") {
       section("Envisalink Vista TPI") {
-        input "evlAddress", "text", title: "Host Address", description: "(ie. 192.168.1.11)", required: false
-        input "evlPort", "text", title: "Host Port", description: "(ie. 4025)", required: false
-        input "evlPassword", "password", title: "Password", description: "", required: false
+        input "evlAddress", "text", title: "Host Address", description: "(ie. 192.168.1.80)", required: true, defaultValue: "192.168.1.80"
+        input "evlPort", "text", title: "Host Port", description: "(ie. 4025)", required: true, defaultValue: "4025"
+        input "evlPassword", "password", title: "Password", description: "", required: true, defaultValue: "user"
       }
     }
 
@@ -119,16 +119,16 @@ def lanResponseHandler(evt) {
 
   def headers = getHttpHeaders(map.headers);
   def body = getHttpBody(map.body);
-  //log.trace "SmartThings Node Proxy: ${evt.stringValue}"
-  //log.trace "Headers: ${headers}"
-  //log.trace "Body: ${body}"
+  //log.debug "SmartThings Node Proxy: ${evt.stringValue}"
+  //log.debug "Headers: ${headers}"
+  //log.debug "Body: ${body}"
 
   //verify that this message is for this plugin
   if (headers.'stnp-plugin' != settings.pluginType) {
     return
   }
 
-  //log.trace "Honeywell Security event: ${evt.stringValue}"
+  //log.debug "Honeywell Security event: ${evt.stringValue}"
   processEvent(body)
 }
 
@@ -137,8 +137,6 @@ private sendCommandPlugin(path) {
 }
 
 private sendCommand(path) {
-  //log.trace "Honeywell Security send command: ${path}"
-
   if (settings.proxyAddress.length() == 0 ||
     settings.proxyPort.length() == 0) {
     log.error "SmartThings Node Proxy configuration not set!"
@@ -177,19 +175,13 @@ private addChildDevices(partitions, zones) {
     def deviceId = 'honeywell|partition'+it.partition
     if (!getChildDevice(deviceId)) {
       addChildDevice("redloro-smartthings", "Honeywell Partition", deviceId, hostHub.id, ["name": "Honeywell Security", label: "Honeywell Security", completedSetup: true])
-      log.debug "Added partition device: ${deviceId}"
     }
-    log.debug "Total Partitions: ${partitions}"
-    log.debug "Total Zones: ${zones}"
   }
-
   zones.each {
     def deviceId = 'honeywell|zone'+it.zone
     if (!getChildDevice(deviceId)) {
       it.type = it.type.capitalize()
       addChildDevice("redloro-smartthings", "Honeywell Zone "+it.type, deviceId, hostHub.id, ["name": it.name, label: it.name, completedSetup: true])
-      log.debug "Added zone #: ${it.zone}"
-      log.debug "Added zone device: ${deviceId}"
     }
   }
 }
@@ -203,15 +195,13 @@ def discoverChildDevices() {
 }
 
 private updateZoneDevices(zonenum,zonestatus) {
-  log.debug "updateZoneDevices: ${zonenum} is ${zonestatus}"
   def zonedevice = getChildDevice("honeywell|zone${zonenum}")
   if (zonedevice) {
     zonedevice.zone("${zonestatus}")
   }
 }
 
-private updatePartitions(partitionnum, partitionstatus, panelalpha) {
-  log.debug "updatePartitions: ${partitionnum} is ${partitionstatus}"
+private updatePartitions(partitionnum, partitionstatus, panelalpha) {  
   def partitionDevice = getChildDevice("honeywell|partition${partitionnum}")
   if (partitionDevice) {
     partitionDevice.partition("${partitionstatus}", "${panelalpha}")
@@ -275,7 +265,6 @@ private getHttpBody(body) {
     def slurper = new JsonSlurper()
     obj = slurper.parseText(new String(body.decodeBase64()))
   }
-  log.debug "HttpBody: ${obj}"
   return obj
 }
 
